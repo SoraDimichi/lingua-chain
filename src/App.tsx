@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PROPOSALS } from "./data";
 import ProporsalForm from "./ProposalForm";
 import VotingForm from "./VotingForm";
@@ -121,14 +121,6 @@ const VotingButtons = () => {
 
 const Proposal = ({ id, title, description }: Proposal) => {
   const [expanded, setExpanded] = useState(false);
-  const [vote, setVote] = useState<Vote | undefined>(undefined);
-  // const [range, setRange] = useState(0);
-
-  // useEffect(() => {
-  //   if (range !== 0 || !vote) return;
-  //
-  //   setVote(undefined);
-  // }, [range, vote]);
 
   return (
     <div key={id} className="py-3.5 text-white">

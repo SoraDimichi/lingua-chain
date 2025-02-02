@@ -3,7 +3,7 @@ import { z } from "zod";
 import { Vote } from "./App";
 
 const formSchema = z.object({
-  title: z.string().min(1, { message: "Title is required" }),
+  range: z.number().min(0, { message: "Couldn't be zero" }),
 });
 
 type ProposalFormP = {
@@ -12,24 +12,24 @@ type ProposalFormP = {
 };
 
 export const VotingForm = ({ vote, close }: ProposalFormP) => {
-  const [formData, setFormData] = useState({ title: "", description: "" });
-  const [errors, setErrors] = useState({ title: "", description: "" });
+  // const [formData, setFormData] = useState({ title: "", description: "" });
+  const [errors, setErrors] = useState({ range: "" });
   const [range, setRange] = useState(0);
-  const handleChange = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => setFormData({ ...formData, [event.target.name]: event.target.value });
+  // const handleChange = (
+  //   event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  // ) => setFormData({ ...formData, [event.target.name]: event.target.value });
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    const result = formSchema.safeParse(formData);
-    if (!result.success) {
-      const fieldErrors = result.error.flatten().fieldErrors;
-      setErrors({
-        title: fieldErrors.title ? fieldErrors.title[0] : "",
-        description: fieldErrors.description ? fieldErrors.description[0] : "",
-      });
-      return;
-    }
-    setErrors({ title: "", description: "" });
+    // const result = formSchema.safeParse(formData);
+    // if (!result.success) {
+    //   const fieldErrors = result.error.flatten().fieldErrors;
+    //   setErrors({
+    //     title: fieldErrors.title ? fieldErrors.title[0] : "",
+    //     description: fieldErrors.description ? fieldErrors.description[0] : "",
+    //   });
+    //   return;
+    // }
+    setErrors({ range: "" });
     close();
   };
 
@@ -44,13 +44,13 @@ export const VotingForm = ({ vote, close }: ProposalFormP) => {
         Choose your voting power and submit the vote
       </p>
       <div className="mb-4">
-        <label htmlFor="title" className="block mb-2">
+        <label htmlFor="title" className="block mb-2 font-bold">
           Choice
         </label>
         {vote}
       </div>
       <div className="flex-col items-center mr-5 mb-10">
-        <label htmlFor="title" className="block mb-2">
+        <label htmlFor="title" className="block mb-2 font-bold">
           Voting power
         </label>
         <input
@@ -62,10 +62,8 @@ export const VotingForm = ({ vote, close }: ProposalFormP) => {
           className="w-full h-2 bg-gray-900 rounded-lg appearance-none cursor-pointer"
         />
         <div className="ml-2 text-lg text-gray-200 w-2">{range}</div>
-        {errors.description && (
-          <p className="text-red-400 text-sm h-0 text-right">
-            {errors.description}
-          </p>
+        {errors.range && (
+          <p className="text-red-400 text-sm h-0 text-right">{errors.range}</p>
         )}
       </div>
       <button
