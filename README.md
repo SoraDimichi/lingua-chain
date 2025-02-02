@@ -1,35 +1,50 @@
-# LinguaChain MVP Development
+# React + TypeScript + Vite
 
-Welcome to the LinguaChain MVP Development repository! LinguaChain is a decentralized platform that enables collaborative management of an artificial language through a DAO-driven governance system. Built on the ElizaOS framework, this project leverages AI to simplify the creation of new symbols, words, and rules, making it easier for users to propose and manage changes to the language.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Project Overview
+Currently, two official plugins are available:
 
-LinguaChain empowers users to collaboratively evolve an artificial language by proposing, voting on, and implementing changes. The integration of ElizaOS plays a central role in this process, providing an AI-powered agent that assists users in creating new symbols, words, and rules. This framework ensures an intuitive experience, even for non-technical users, while maintaining transparency and decentralization through blockchain-based governance.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## Key Features
+## Expanding the ESLint configuration
 
-1. ElizaOS Integration
+If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
 
-**AI-Powered Assistance**: ElizaOS provides an AI agent that helps users create new symbols, words, and rules more efficiently.<br>
-**Simplified Proposal Submission**: Users can easily submit proposals for new language elements with the help of ElizaOS's intuitive interface and AI guidance. <br>
-**Real-Time Language Updates**: ElizaOS ensures that accepted proposals are processed and integrated into the language in real-time, enabling dynamic and responsive language evolution.
+- Configure the top-level `parserOptions` property like this:
 
-2. DAO Governance
+```js
+export default tseslint.config({
+  languageOptions: {
+    // other options...
+    parserOptions: {
+      project: ['./tsconfig.node.json', './tsconfig.app.json'],
+      tsconfigRootDir: import.meta.dirname,
+    },
+  },
+})
+```
 
-**Decentralized Voting**: A DAO structure allows participants to vote on proposed changes using the LinguaChain Token (LCT).<br>
-**Transparent Decision-Making**: All proposals and voting results are recorded on the blockchain, ensuring transparency and trust in the governance process.
+- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
+- Optionally add `...tseslint.configs.stylisticTypeChecked`
+- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
 
-3. Language Database
+```js
+// eslint.config.js
+import react from 'eslint-plugin-react'
 
-**Structured Storage**: A robust database schema stores words, symbols, and rules, with versioning support for rollback in case of disputes.<br>
-**API Access**: An API enables easy reading and writing of linguistic data, ensuring consistency with blockchain governance decisions.
-
-4. User Interface
-
-**Intuitive Design**: A user-friendly interface allows users to submit proposals, vote on changes, and view past proposals and results.<br>
-**Token-Based Staking**: Users can stake LCT tokens to participate in voting, ensuring active and engaged governance.
-
-5. Smart Contract & Token Mechanics
-
-**LinguaChain Token (LCT)**: The native token facilitates voting and rewards for accepted proposals.<br>
-**Staking Mechanism**: Users stake LCT tokens to participate in governance, with rewards distributed for successful proposals.
+export default tseslint.config({
+  // Set the react version
+  settings: { react: { version: '18.3' } },
+  plugins: {
+    // Add the react plugin
+    react,
+  },
+  rules: {
+    // other rules...
+    // Enable its recommended rules
+    ...react.configs.recommended.rules,
+    ...react.configs['jsx-runtime'].rules,
+  },
+})
+```
