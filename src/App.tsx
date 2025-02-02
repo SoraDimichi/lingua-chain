@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PROPOSALS } from "./data";
 import ProporsalForm from "./ProposalForm";
+import VotingForm from "./VotingForm";
 
 interface Proposal {
   id: number;
@@ -8,7 +9,7 @@ interface Proposal {
   description: string;
 }
 
-enum Vote {
+export enum Vote {
   For = "for",
   Against = "against",
   Abstain = "abstain",
@@ -67,7 +68,7 @@ export const AddButton = ({ addProposal }: FormButtonP) => {
               className="text-gray-600 absolute absolute -top-2 -right-10 text-base"
               onClick={close}
             >
-              [ <span className="text-red-500">x</span> ]
+              [ <span className="text-red-700">x</span> ]
             </button>
           </div>
         </div>
@@ -76,34 +77,64 @@ export const AddButton = ({ addProposal }: FormButtonP) => {
   );
 };
 
+const buttonStyle = (visible: boolean) =>
+  `w-9 h-9 grid place-items-center rounded-full border-2 ${visible ? "" : "pointer-events-none in"}visible`;
+const VotingButtons = () => {
+  const [vote, setVote] = useState<Vote | undefined>(undefined);
+
+  return (
+    <div className="flex gap-3 items-center">
+      <button
+        className={`${buttonStyle(vote !== Vote.For)} border-green-800 text-green-800`}
+        onClick={() => setVote(Vote.For)}
+      >
+        <For />
+      </button>
+      <button
+        className={`${buttonStyle(vote !== Vote.Against)} border-red-800 text-red-800`}
+        onClick={() => setVote(Vote.Against)}
+      >
+        <Against />
+      </button>
+      <button
+        className={`${buttonStyle(vote !== Vote.Abstain)} border-gray-500 text-gray-500`}
+        onClick={() => setVote(Vote.Abstain)}
+      >
+        <span className="text-3xl -mt-2">-</span>
+      </button>
+      {vote && (
+        <div className="fixed inset-0 bg-black/60 bg-opacity-20 flex items-center justify-center z-50">
+          <div className="relative min-w-75">
+            <VotingForm vote={vote} close={close} />
+            <button
+              className="text-gray-600 absolute absolute -top-2 -right-10 text-base"
+              onClick={() => setVote(undefined)}
+            >
+              [ <span className="text-red-700">x</span> ]
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Proposal = ({ id, title, description }: Proposal) => {
   const [expanded, setExpanded] = useState(false);
   const [vote, setVote] = useState<Vote | undefined>(undefined);
+  // const [range, setRange] = useState(0);
+
+  // useEffect(() => {
+  //   if (range !== 0 || !vote) return;
+  //
+  //   setVote(undefined);
+  // }, [range, vote]);
 
   return (
     <div key={id} className="py-3.5 text-white">
       <div className="flex justify-between">
         <h2 className="text-lg font-semibold">{title}</h2>
-        <div className="flex gap-2">
-          <button
-            className={`w-10 h-10 grid place-items-center rounded-full ${vote === Vote.For ? "bg-green-500" : "bg-gray-700"}`}
-            onClick={() => setVote(Vote.For)}
-          >
-            <For />
-          </button>
-          <button
-            className={`w-10 h-10 grid place-items-center flex items-center rounded-full ${vote === Vote.Against ? "bg-red-500" : "bg-gray-700"}`}
-            onClick={() => setVote(Vote.Against)}
-          >
-            <Against />
-          </button>
-          <button
-            className={`w-10 h-10 grid place-items-center items-center rounded-full ${vote === Vote.Abstain ? "bg-gray-500" : "bg-gray-700"}`}
-            onClick={() => setVote(Vote.Abstain)}
-          >
-            <span className="text-3xl -mt-2">-</span>
-          </button>
-        </div>
+        <VotingButtons />
       </div>
       <div className="mt-4 inline-grid grid-cols-[1fr_max_content] grid-flow-col justify-between w-full">
         <p className={`text-gray-300  ${expanded ? "" : "truncate"}`}>
@@ -120,10 +151,14 @@ const Proposal = ({ id, title, description }: Proposal) => {
 };
 
 const For = () => (
-  <svg viewBox="0 0 24 24" width="20px" height="20px">
+  <svg
+    viewBox="0 0 24 24"
+    width="20px"
+    height="20px"
+    className="stroke-current"
+  >
     <path
       fill="none"
-      stroke="currentColor"
       stroke-linecap="round"
       stroke-linejoin="round"
       stroke-width="2"
