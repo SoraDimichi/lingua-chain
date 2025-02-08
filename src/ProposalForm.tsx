@@ -65,7 +65,9 @@ export const ProposalForm = () => {
       finalDate: convertDateToUint256(result.data.finalDate),
     };
 
-    await contract?.createProposal(...Object.values(final));
+    await contract
+      ?.createProposal(...Object.values(final))
+      .then((tx) => tx.wait());
     setSubmitting(false);
 
     window.location.reload();

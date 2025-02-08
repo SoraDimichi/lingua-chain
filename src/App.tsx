@@ -209,11 +209,12 @@ const Scale = ({
   positive: Vote[];
   negative: Vote[];
 }) => {
-  const forVotes = positive.reduce((acc, v) => acc + Number(v.stakeAmount), 0);
-  const againstVotes = negative.reduce(
-    (acc, v) => acc + Number(v.stakeAmount),
-    0,
-  );
+  const forVotes =
+    positive.reduce((acc, v) => acc + Number(v.stakeAmount), 0) /
+    1000000000000000000;
+  const againstVotes =
+    negative.reduce((acc, v) => acc + Number(v.stakeAmount), 0) /
+    1000000000000000000;
   const totalVotes = forVotes + againstVotes;
   const forPercentage = totalVotes ? (forVotes / totalVotes) * 100 : 1;
   const againstPercentage = totalVotes ? (againstVotes / totalVotes) * 100 : 1;
@@ -231,8 +232,8 @@ const Scale = ({
         />
       </div>
       <div className="flex justify-between text-xs mt-1 text-gray-400">
-        <span>{forPercentage}%</span>
-        <span>{againstPercentage}%</span>
+        <span>{forVotes}</span>
+        <span>{againstVotes}</span>
       </div>
     </div>
   );

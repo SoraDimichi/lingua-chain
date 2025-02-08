@@ -27,8 +27,14 @@ export const VotingForm = ({ vote, id }: ProposalFormProps) => {
     }
     setErrors({ range: "" });
 
-    await tokensContract?.approve(daoAddress, BigInt(range));
-    await contract?.voteOnProposal(id, vote, BigInt(range));
+    const real = BigInt(range * 1000000000000000000);
+
+    await tokensContract
+      ?.approve(daoAddress, BigInt(real))
+      .then((tx) => tx.wait());
+    await contract
+      ?.voteOnProposal(id, vote, BigInt(real))
+      .then((tx) => tx.wait());
 
     setSubmitting(false);
 
@@ -58,7 +64,7 @@ export const VotingForm = ({ vote, id }: ProposalFormProps) => {
         <input
           type="range"
           min="1"
-          max={tokens?.toString() ?? "1"}
+          max={(Number(tokens) / 1000000000000000000).toString()}
           value={range}
           onChange={(event) => setRange(Number(event.target.value))}
           className="w-full h-2 bg-gray-900 rounded-lg appearance-none cursor-pointer"
