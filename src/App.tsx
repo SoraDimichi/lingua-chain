@@ -181,11 +181,19 @@ const Proposal = (p: Proposal) => {
     finalDate,
   } = p;
 
+  const now = Date.now();
+  const active = startingDate < now && finalDate > now;
+
   return (
     <div className="py-3.5 text-white">
       <div className="flex justify-between">
         <div>
-          <h2 className="text-lg font-semibold">{title}</h2>
+          <h2 className="text-lg font-semibold flex gap-2 items-center">
+            <div
+              className={`size-2 rounded-full bg-${!active ? "green" : "gray"}-700`}
+            />
+            <span>{title}</span>
+          </h2>
           <div className="text-gray-500 text-xs flex gap-3">
             <span>By: {proposer}</span>
             <span>Started: {convertUint256ToDate(startingDate)}</span>
