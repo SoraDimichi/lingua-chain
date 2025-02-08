@@ -3,23 +3,36 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import "../src/LCTGovernance.sol";
-import "../src/LCToken.sol";
+import "../contracts/LCTGovernance.sol";
+import "../contracts/LCToken.sol";
 
 contract DeployLCTGovernance is Script {
     function run() external {
         vm.startBroadcast();
 
-        LCToken lcToken = new LCToken(50_000 ether);
+        LCToken lcToken = new LCToken(5 ether);
         LCTGovernance governance = new LCTGovernance(lcToken, 1 ether);
 
-        governance.createProposal("Proposal 1", "Description for Proposal 1");
-        governance.createProposal("Proposal 2", "Description for Proposal 2");
-        governance.createProposal("Proposal 3", "Description for Proposal 3");
+        uint256 currentDay = block.timestamp / 1 days;
+        governance.createProposal(
+            "Increase Rewards",
+            "Proposal to increase reward distribution by 10%",
+            currentDay + 7 days
+        );
+        governance.createProposal(
+            "Reduce Fees",
+            "Proposal to reduce transaction fees",
+            currentDay + 10 days
+        );
+        governance.createProposal(
+            "New Feature",
+            "Proposal to introduce new features",
+            currentDay + 14 days
+        );
 
         vm.stopBroadcast();
 
-        console.log("Token deployed at:", address(lcToken));
-        console.log("DAO deployed at:", address(governance));
+        console.log("VITE_LCTOKEN=", address(lcToken));
+        console.log("VITE_LCTGOVERNANCE=", address(governance));
     }
 }

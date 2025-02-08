@@ -1,45 +1,69 @@
 import { useEffect, useState } from "react";
 import ProporsalForm from "./ProposalForm";
 import Header from "./Header";
-import { useWeb3 } from "./context";
+import { useWeb3, daoAddress, provider } from "./context";
+import { convertDateToUint256, convertUint256ToDate } from "./utils";
+import contractArtifact from "../out/LCTGovernance.sol/LCTGovernance.json";
+import VotingForm from "./VotingForm";
+import { ethers } from "ethers";
+
+interface Vote {
+  voter: string;
+  stakeAmount: bigint;
+}
 
 interface Proposal {
-  id: number;
-  name: string;
+  id: bigint;
+  title: string;
   description: string;
-  forVotes: number;
-  againstVotes: number;
+  finalDate: bigint;
+  startingDate: bigint;
   proposer: string;
+  positive: Vote[];
+  negative: Vote[];
 }
+
+const formatVotes = (data) =>
+  data.map((v) => ({ voter: v[0], stakeAmount: BigInt(v[1]) }));
 
 const format = (data) =>
   data.map((p: any) => ({
-    id: Number(p[0]),
-    name: p[1],
+    id: BigInt(p[0]),
+    title: p[1],
     description: p[2],
-    forVotes: Number(p[3]),
-    againstVotes: Number(p[4]),
+    finalDate: BigInt(p[3]),
+    startingDate: BigInt(p[4]),
     proposer: p[5],
+    positive: formatVotes(p[6]),
+    negative: formatVotes(p[7]),
   }));
-
 export default function ProposalsList() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const { contract, account } = useWeb3();
 
   useEffect(() => {
-    contract?.getAllProposals().then(format).then(setProposals);
-  }, [contract]);
+    // (!account
+    // ? new ethers.Contract(
+    //     daoAddress,
+    //     contractArtifact.abi,
+    //     new ethers.JsonRpcProvider(provider),
+    //   )
+    contract
+      // )
+      ?.getAllProposals()
+      .then(format)
+      .then(setProposals);
+  }, [contract, account]);
 
-  const addOptimisticProposal: AddProposal = (
-    proposal: Pick<Proposal, "name" | "description">,
-  ) => {
+  const addOptimisticProposal: AddProposal = (proposal) => {
     setProposals((prev) => [
       ...prev,
       {
         ...proposal,
-        forVotes: 0,
-        againstVotes: 0,
-        id: prev.length,
+        positive: [],
+        negative: [],
+        startingDate: convertDateToUint256(new Date(Date.now()).toString()),
+        id: BigInt(prev.length),
         proposer: account ?? "",
       },
     ]);
@@ -49,7 +73,7 @@ export default function ProposalsList() {
     <div className="min-h-dvh grid grid-rows-[min-content_1fr] h-full">
       <Header />
       <div className="bg-linear-to-t from-cyan-900 to-gray-900 fixed top-0 z-1 h-full w-full" />
-      <main className="container grid grid-rows-[min-content_1fr] mx-auto z-2 h-full py-10">
+      <main className="container grid grid-rows-[min-content_1fr] mx-auto z-2 h-full pt-10 px-10">
         <div className="-ml-1 mb-4 text-4xl font-black h-13 font-semibold text-white mt-10 flex justify-between">
           <h1>Proposals</h1>
           <AddButton addProposal={addOptimisticProposal} />
@@ -68,7 +92,7 @@ export default function ProposalsList() {
 
 export type FormButtonP = { addProposal: AddProposal };
 export type AddProposal = (
-  proposal: Pick<Proposal, "name" | "description">,
+  proposal: Pick<Proposal, "title" | "description" | "finalDate">,
 ) => void;
 
 const ClosePseudoButton = ({ close }: { close: () => void }) => (
@@ -108,55 +132,67 @@ export const AddButton = ({ addProposal }: FormButtonP) => {
 };
 
 const buttonStyle = `w-9 h-9 grid place-items-center rounded-full border-2`;
-const VotingButtons = ({ id }: { id: number }) => {
-  const { account, contract } = useWeb3();
+const VotingButtons = ({ id }: { id: bigint }) => {
+  const { account } = useWeb3();
   const [vote, setVote] = useState<boolean | null>(null);
 
   const disabled = !account || vote !== null;
 
-  const castVote = (v: boolean) => async () => {
-    try {
-      const result = await contract?.voteOnProposal(id, v);
-      console.log(result);
-      setVote(v);
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  const close = () => setVote(null);
 
   return (
     <div className="flex gap-3 items-center">
       <button
         disabled={disabled}
-        className={`${buttonStyle} border-green-800 text-green-800 ${vote !== null && vote === false ? "invisible" : ""}`}
-        onClick={castVote(true)}
+        className={`${buttonStyle} border-green-800 ${vote !== null && vote === false ? "invisible" : ""} ${vote === true ? "bg-green-800 text-gray-900" : "text-green-800"}`}
+        onClick={() => setVote(true)}
       >
         <For />
       </button>
       <button
         disabled={disabled}
-        className={`${buttonStyle} border-red-800 text-red-800 ${vote !== null && vote === true ? "invisible" : ""}`}
-        onClick={castVote(false)}
+        className={`${buttonStyle} border-red-800 ${vote !== null && vote === true ? "invisible" : ""} ${vote === false ? "bg-red-800 text-gray-900" : "text-red-800"}`}
+        onClick={() => setVote(false)}
       >
         <Against />
       </button>
+      {vote !== null && (
+        <div className="fixed inset-0 bg-black/60 bg-opacity-20 flex items-center justify-center z-50">
+          <div className="relative min-w-75">
+            <VotingForm vote={vote} close={close} id={id} />
+            <ClosePseudoButton close={close} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 const Proposal = (p: Proposal) => {
-  const { name, description, forVotes, againstVotes, proposer } = p;
+  const {
+    title,
+    description,
+    positive,
+    negative,
+    proposer,
+    startingDate,
+    finalDate,
+  } = p;
   return (
     <div className="py-3.5 text-white">
       <div className="flex justify-between">
         <div>
-          <h2 className="text-lg font-semibold">{name}</h2>
-          <div className=" text-gray-700 text-xs">By: {proposer}</div>
+          <h2 className="text-lg font-semibold">{title}</h2>
+          <div className="text-gray-500 text-xs flex gap-3">
+            <span>By: {proposer}</span>
+            <span>Started: {convertUint256ToDate(startingDate)}</span>
+            <span>Finishes: {convertUint256ToDate(finalDate)}</span>
+          </div>
           <p className="text-gray-300 mt-3">{description}</p>
         </div>
         <div>
           <VotingButtons id={p.id} />
-          <Scale forVotes={forVotes} againstVotes={againstVotes} />
+          <Scale forVotes={positive.length} againstVotes={negative.length} />
         </div>
       </div>
     </div>

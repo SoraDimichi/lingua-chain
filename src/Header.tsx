@@ -29,7 +29,7 @@ const Header = () => {
       </div>
       {account ? (
         <div className="flex gap-4 items-center">
-          <span>Balance: {tokens}</span>
+          <span>Balance: {tokens?.toString()}</span>
           <div className="bg-gray-700 flex items-center gap-4 rounded-full p-1">
             <Avatar username={account} />
             <span className="text-white mr-4">{truncatedAddress}</span>

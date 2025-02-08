@@ -7,18 +7,19 @@ import {
   useCallback,
 } from "react";
 import { ethers } from "ethers";
-import contractArtifact from "../../out/LCTGovernance.sol/LCTGovernance.json";
-import tokensArtifact from "../../out/LCToken.sol/LCToken.json";
+import contractArtifact from "../out/LCTGovernance.sol/LCTGovernance.json";
+import tokensArtifact from "../out/LCToken.sol/LCToken.json";
 
-const daoAddress = "0x809d550fca64d94Bd9F66E60752A544199cfAC3D";
-const tokensAddress = "0x36C02dA8a0983159322a80FFE9F24b1acfF8B570";
+const tokensAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa";
+export const daoAddress = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+export const provider = "http://localhost:8545";
 
 interface Web3State {
   provider: ethers.BrowserProvider | null;
   signer: ethers.Signer | null;
   account: string | null;
   contract: ethers.Contract | null;
-  tokens: number | null;
+  tokens: bigint | null;
 }
 
 interface Web3ContextProps extends Web3State {
@@ -77,7 +78,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
         signer: tempSigner,
         account: address,
         contract,
-        tokens: Number(tokens),
+        tokens: BigInt(tokens),
       }));
 
       window.ethereum.on("accountsChanged", handleAccountsChanged);

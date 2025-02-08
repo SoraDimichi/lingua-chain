@@ -1,11 +1,26 @@
 import React, { useState } from "react";
-import { z } from "zod";
 import { useWeb3 } from "./context";
 import type { AddProposal } from "./App";
+import { convertDateToUint256 } from "./utils";
+import { z } from "zod";
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
   description: z.string().min(1, { message: "Description is required" }),
+  finalDate: z
+    .string()
+    .min(1, { message: "Finish date is required" })
+    .refine(
+      (date) => {
+        const inputDate = new Date(date);
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        inputDate.setHours(0, 0, 0, 0);
+        tomorrow.setHours(0, 0, 0, 0);
+        return inputDate.getTime() >= tomorrow.getTime();
+      },
+      { message: "Finish date must be at least tomorrow" },
+    ),
 });
 
 type ProposalFormP = {
@@ -13,31 +28,50 @@ type ProposalFormP = {
   close: () => void;
 };
 
-export const ProporsalForm = ({ addProposal, close }: ProposalFormP) => {
-  const { contract, account } = useWeb3();
+export const ProposalForm = ({ addProposal, close }: ProposalFormP) => {
+  const { contract } = useWeb3();
 
-  const [formData, setFormData] = useState({ title: "", description: "" });
-  const [errors, setErrors] = useState({ title: "", description: "" });
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    finalDate: "",
+  });
+
+  const [errors, setErrors] = useState({
+    title: "",
+    description: "",
+    finalDate: "",
+  });
+
+  // This handler works for all input fields because we're using the "name" attribute
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => setFormData({ ...formData, [event.target.name]: event.target.value });
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const result = formSchema.safeParse(formData);
+
     if (!result.success) {
       const fieldErrors = result.error.flatten().fieldErrors;
       setErrors({
         title: fieldErrors.title ? fieldErrors.title[0] : "",
         description: fieldErrors.description ? fieldErrors.description[0] : "",
+        finalDate: fieldErrors.finalDate ? fieldErrors.finalDate[0] : "",
       });
       return;
     }
-    setErrors({ title: "", description: "" });
+    setErrors({ title: "", description: "", finalDate: "" });
 
-    await contract?.createProposal(formData.title, formData.description);
+    const final = {
+      title: result.data.title,
+      description: result.data.description,
+      finalDate: convertDateToUint256(result.data.finalDate),
+    };
 
-    addProposal({ name: formData.title, description: formData.description });
+    await contract?.createProposal(...Object.values(final));
 
+    addProposal(final);
     close();
   };
 
@@ -49,7 +83,7 @@ export const ProporsalForm = ({ addProposal, close }: ProposalFormP) => {
     >
       <h1 className="text-lg font-bold mb-1">Compose a proposal</h1>
       <p className="text-gray-400 mb-5 text-sm">
-        Enter title and description to compose a proposal
+        Enter title, description, and finish date to compose a proposal
       </p>
       <div className="mb-4">
         <label htmlFor="title" className="block mb-2">
@@ -84,6 +118,24 @@ export const ProporsalForm = ({ addProposal, close }: ProposalFormP) => {
           </p>
         )}
       </div>
+      <div className="mb-4">
+        <label htmlFor="finalDate" className="block mb-2">
+          Finish Date
+        </label>
+        <input
+          type="date"
+          name="finalDate"
+          id="finalDate"
+          value={formData.finalDate}
+          onChange={handleChange}
+          className="w-full py-2 px-3 bg-gray-800 border border-gray-600 rounded text-white focus:outline-none focus:border-blue-500"
+        />
+        {errors.finalDate && (
+          <p className="text-red-400 text-sm h-0 text-right">
+            {errors.finalDate}
+          </p>
+        )}
+      </div>
       <button
         type="submit"
         className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline self-center"
@@ -94,4 +146,4 @@ export const ProporsalForm = ({ addProposal, close }: ProposalFormP) => {
   );
 };
 
-export default ProporsalForm;
+export default ProposalForm;
