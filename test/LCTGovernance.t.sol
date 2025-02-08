@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import {Test, console} from "forge-std/Test.sol";
-import {LCTGovernance} from "../src/LCTGovernance.sol";
-import {LCToken} from "../src/LCToken.sol";
+import {LCTGovernance} from "../contracts/LCTGovernance.sol";
+import {LCToken} from "../contracts/LCToken.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract LCTGovernanceTest is Test {
@@ -33,7 +33,9 @@ contract LCTGovernanceTest is Test {
         IERC20(lcToken).approve(address(governance), 1.5 ether);
         governance.stakeTokens(1.5 ether);
 
-        uint256 governanceBalance = IERC20(lcToken).balanceOf(address(governance));
+        uint256 governanceBalance = IERC20(lcToken).balanceOf(
+            address(governance)
+        );
         uint256 playerBalance = IERC20(lcToken).balanceOf(player1);
         assertEq(governanceBalance, 1.5 ether);
         assertEq(playerBalance, 4.5 ether);
@@ -46,7 +48,9 @@ contract LCTGovernanceTest is Test {
 
         governance.unstakeTokens(3 ether);
 
-        uint256 governanceBalance = IERC20(lcToken).balanceOf(address(governance));
+        uint256 governanceBalance = IERC20(lcToken).balanceOf(
+            address(governance)
+        );
         uint256 playerBalance = IERC20(lcToken).balanceOf(player1);
         assertEq(governanceBalance, 2 ether); // 5 - 3 = 2
         assertEq(playerBalance, 4 ether); // 6 - 5 + 3 = 4 (initial 6, staked 5, unstaked 3)
@@ -56,7 +60,8 @@ contract LCTGovernanceTest is Test {
         vm.startPrank(player1, player1);
         governance.createProposal("Test proposal");
 
-        (uint256 id, string memory desc,,, address proposer) = governance.proposals(0);
+        (uint256 id, string memory desc, , , address proposer) = governance
+            .proposals(0);
         assertEq(id, 0);
         assertEq(desc, "Test proposal");
         assertEq(proposer, player1);
@@ -76,7 +81,7 @@ contract LCTGovernanceTest is Test {
         governance.voteOnProposal(0, true);
         vm.stopPrank();
 
-        (,, uint256 forVotes,,) = governance.proposals(0);
+        (, , uint256 forVotes, , ) = governance.proposals(0);
         assertEq(forVotes, 1);
 
         assertTrue(governance.hasVoted(0, player1));
@@ -155,7 +160,7 @@ contract LCTGovernanceTest is Test {
 
         governance.voteOnProposal(0, false);
 
-        (,,, uint256 againstVotes,) = governance.proposals(0);
+        (, , , uint256 againstVotes, ) = governance.proposals(0);
         assertEq(againstVotes, 1);
     }
 }

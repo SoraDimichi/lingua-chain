@@ -37,19 +37,20 @@ const format = (data) =>
     positive: formatVotes(p[6]),
     negative: formatVotes(p[7]),
   }));
+
 export default function ProposalsList() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const { contract, account } = useWeb3();
 
   useEffect(() => {
-    // (!account
-    // ? new ethers.Contract(
-    //     daoAddress,
-    //     contractArtifact.abi,
-    //     new ethers.JsonRpcProvider(provider),
-    //   )
-    contract
-      // )
+    (!account
+      ? new ethers.Contract(
+          daoAddress,
+          contractArtifact.abi,
+          new ethers.JsonRpcProvider(provider),
+        )
+      : contract
+    )
       ?.getAllProposals()
       .then(format)
       .then(setProposals);
