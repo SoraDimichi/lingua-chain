@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import ProporsalForm from "./ProposalForm";
 import Header from "./Header";
 import { useWeb3, daoAddress, provider } from "./context";
-import { convertDateToUint256, convertUint256ToDate } from "./utils";
+import { convertUint256ToDate } from "./utils";
 import contractArtifact from "../out/LCTGovernance.sol/LCTGovernance.json";
 import VotingForm from "./VotingForm";
 import { ethers } from "ethers";
@@ -56,20 +56,6 @@ export default function ProposalsList() {
       .then(setProposals);
   }, [contract, account]);
 
-  const addOptimisticProposal: AddProposal = (proposal) => {
-    setProposals((prev) => [
-      ...prev,
-      {
-        ...proposal,
-        positive: [],
-        negative: [],
-        startingDate: convertDateToUint256(new Date(Date.now()).toString()),
-        id: BigInt(prev.length),
-        proposer: account ?? "",
-      },
-    ]);
-  };
-
   return (
     <div className="min-h-dvh grid grid-rows-[min-content_1fr] h-full">
       <Header />
@@ -77,7 +63,7 @@ export default function ProposalsList() {
       <main className="container grid grid-rows-[min-content_1fr] mx-auto z-2 h-full pt-10 px-10">
         <div className="-ml-1 mb-4 text-4xl font-black h-13 font-semibold text-white mt-10 flex justify-between">
           <h1>Proposals</h1>
-          <AddButton addProposal={addOptimisticProposal} />
+          <AddButton />
         </div>
         <div className="border-x shadow-3xl border-t border-gray-500 w-full bg-gray-900 rounded-xs">
           <div className="flex flex-col-reverse divide-gray-700 divide-y-1 divide-y-reverse px-6">
@@ -91,11 +77,6 @@ export default function ProposalsList() {
   );
 }
 
-export type FormButtonP = { addProposal: AddProposal };
-export type AddProposal = (
-  proposal: Pick<Proposal, "title" | "description" | "finalDate">,
-) => void;
-
 const ClosePseudoButton = ({ close }: { close: () => void }) => (
   <button
     onClick={close}
@@ -105,7 +86,7 @@ const ClosePseudoButton = ({ close }: { close: () => void }) => (
   </button>
 );
 
-export const AddButton = ({ addProposal }: FormButtonP) => {
+export const AddButton = () => {
   const { account } = useWeb3();
   const [shown, setShowForm] = useState(false);
 
@@ -123,7 +104,7 @@ export const AddButton = ({ addProposal }: FormButtonP) => {
       {shown && (
         <div className="fixed inset-0 bg-black/60 bg-opacity-20 flex items-center justify-center z-50">
           <div className="relative min-w-75">
-            <ProporsalForm addProposal={addProposal} close={close} />
+            <ProporsalForm />
             <ClosePseudoButton close={close} />
           </div>
         </div>
@@ -133,34 +114,54 @@ export const AddButton = ({ addProposal }: FormButtonP) => {
 };
 
 const buttonStyle = `w-9 h-9 grid place-items-center rounded-full border-2`;
-const VotingButtons = ({ id }: { id: bigint }) => {
+type VotingButtonsP = { id: bigint; positive: Vote[]; negative: Vote[] };
+const VotingButtons = ({ id, positive, negative }: VotingButtonsP) => {
   const { account } = useWeb3();
-  const [vote, setVote] = useState<boolean | null>(null);
+
+  const votedPositivly = positive.some((v) => v.voter === account);
+  const votedNegativly = negative.some((v) => v.voter === account);
+
+  const [vote, setVote] = useState<boolean | null>();
+
+  useEffect(() => {
+    setVote(votedPositivly ? true : votedNegativly ? false : null);
+  }, [votedPositivly, votedNegativly]);
+
+  const [open, setOpen] = useState(false);
 
   const disabled = !account || vote !== null;
 
-  const close = () => setVote(null);
+  const close = () => {
+    setOpen(false);
+    setVote(null);
+  };
 
   return (
     <div className="flex gap-3 items-center">
       <button
         disabled={disabled}
         className={`${buttonStyle} border-green-800 ${vote !== null && vote === false ? "invisible" : ""} ${vote === true ? "bg-green-800 text-gray-900" : "text-green-800"}`}
-        onClick={() => setVote(true)}
+        onClick={() => {
+          setOpen(true);
+          setVote(true);
+        }}
       >
         <For />
       </button>
       <button
         disabled={disabled}
         className={`${buttonStyle} border-red-800 ${vote !== null && vote === true ? "invisible" : ""} ${vote === false ? "bg-red-800 text-gray-900" : "text-red-800"}`}
-        onClick={() => setVote(false)}
+        onClick={() => {
+          setOpen(true);
+          setVote(false);
+        }}
       >
         <Against />
       </button>
-      {vote !== null && (
+      {open && (
         <div className="fixed inset-0 bg-black/60 bg-opacity-20 flex items-center justify-center z-50">
           <div className="relative min-w-75">
-            <VotingForm vote={vote} close={close} id={id} />
+            <VotingForm vote={vote!} close={close} id={id} />
             <ClosePseudoButton close={close} />
           </div>
         </div>
@@ -179,6 +180,7 @@ const Proposal = (p: Proposal) => {
     startingDate,
     finalDate,
   } = p;
+
   return (
     <div className="py-3.5 text-white">
       <div className="flex justify-between">
@@ -192,8 +194,8 @@ const Proposal = (p: Proposal) => {
           <p className="text-gray-300 mt-3">{description}</p>
         </div>
         <div>
-          <VotingButtons id={p.id} />
-          <Scale forVotes={positive.length} againstVotes={negative.length} />
+          <VotingButtons id={p.id} positive={positive} negative={negative} />
+          <Scale positive={positive} negative={negative} />
         </div>
       </div>
     </div>
@@ -201,12 +203,17 @@ const Proposal = (p: Proposal) => {
 };
 
 const Scale = ({
-  forVotes,
-  againstVotes,
+  positive,
+  negative,
 }: {
-  forVotes: number;
-  againstVotes: number;
+  positive: Vote[];
+  negative: Vote[];
 }) => {
+  const forVotes = positive.reduce((acc, v) => acc + Number(v.stakeAmount), 0);
+  const againstVotes = negative.reduce(
+    (acc, v) => acc + Number(v.stakeAmount),
+    0,
+  );
   const totalVotes = forVotes + againstVotes;
   const forPercentage = totalVotes ? (forVotes / totalVotes) * 100 : 1;
   const againstPercentage = totalVotes ? (againstVotes / totalVotes) * 100 : 1;
@@ -215,17 +222,17 @@ const Scale = ({
     <div className="mt-4">
       <div className="relative w-full h-1 bg-gray-700 rounded-lg overflow-hidden">
         <div
-          className="absolute top-0 left-0 h-full bg-green-500"
+          className="absolute top-0 left-0 h-full bg-green-800"
           style={{ width: `${forPercentage}%` }}
         />
         <div
-          className="absolute top-0 right-0 h-full bg-red-500"
+          className="absolute top-0 right-0 h-full bg-red-800"
           style={{ width: `${againstPercentage}%` }}
         />
       </div>
       <div className="flex justify-between text-xs mt-1 text-gray-400">
-        <span>{forVotes}</span>
-        <span>{againstVotes}</span>
+        <span>{forPercentage}%</span>
+        <span>{againstPercentage}%</span>
       </div>
     </div>
   );

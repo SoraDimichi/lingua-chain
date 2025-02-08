@@ -5,3 +5,11 @@ declare global {
     ethereum?: MetaMaskInpageProvider;
   }
 }
+interface ImportMetaEnv {
+  readonly VITE_LCTOKEN: string;
+  readonly VITE_LCTGOVERNANCE: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}

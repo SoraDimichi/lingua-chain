@@ -5,13 +5,14 @@ import {
   createContext,
   useContext,
   useCallback,
+  useLayoutEffect,
 } from "react";
 import { ethers } from "ethers";
 import contractArtifact from "../out/LCTGovernance.sol/LCTGovernance.json";
 import tokensArtifact from "../out/LCToken.sol/LCToken.json";
 
-const tokensAddress = "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707";
-export const daoAddress = "0x0165878A594ca255338adfa4d48449f69242Eb8F";
+const tokensAddress = import.meta.env.VITE_LCTOKEN;
+export const daoAddress = import.meta.env.VITE_LCTGOVERNANCE;
 export const provider = "http://localhost:8545";
 
 interface Web3State {
@@ -20,6 +21,7 @@ interface Web3State {
   account: string | null;
   contract: ethers.Contract | null;
   tokens: bigint | null;
+  tokensContract: ethers.Contract | null;
 }
 
 interface Web3ContextProps extends Web3State {
@@ -33,6 +35,7 @@ export const Web3Context = createContext<Web3ContextProps>({
   connectWallet: async () => {},
   contract: null,
   tokens: null,
+  tokensContract: null,
 });
 
 export const Web3Provider = ({ children }: { children: ReactNode }) => {
@@ -42,9 +45,8 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
     account: null,
     contract: null,
     tokens: null,
+    tokensContract: null,
   });
-
-  // const { showBoundary } = useErrorBoundary();
 
   const connectWallet = useCallback(async () => {
     if (
@@ -65,11 +67,13 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       tempSigner,
     );
 
-    const tokens = await new ethers.Contract(
+    const tokens = new ethers.Contract(
       tokensAddress,
       tokensArtifact.abi,
       tempSigner,
-    ).balanceOf(address);
+    );
+
+    const t = await tokens.balanceOf(address);
 
     setWeb3State((prevState) => ({
       ...prevState,
@@ -77,7 +81,8 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
       signer: tempSigner,
       account: address,
       contract,
-      tokens: BigInt(tokens),
+      tokens: BigInt(t),
+      tokensContract: tokens,
     }));
 
     window.ethereum.on("accountsChanged", handleAccountsChanged);
@@ -99,7 +104,7 @@ export const Web3Provider = ({ children }: { children: ReactNode }) => {
     window.location.reload();
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     return () => {
       if (window.ethereum && window.ethereum.removeListener) {
         window.ethereum.removeListener(

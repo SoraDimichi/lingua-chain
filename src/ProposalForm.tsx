@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useWeb3 } from "./context";
-import type { AddProposal } from "./App";
 import { convertDateToUint256 } from "./utils";
 import { z } from "zod";
 
@@ -23,19 +22,15 @@ const formSchema = z.object({
     ),
 });
 
-type ProposalFormP = {
-  addProposal: AddProposal;
-  close: () => void;
-};
-
-export const ProposalForm = ({ addProposal, close }: ProposalFormP) => {
+export const ProposalForm = () => {
   const { contract } = useWeb3();
-
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     finalDate: "",
   });
+
+  const [submitting, setSubmitting] = useState(false);
 
   const [errors, setErrors] = useState({
     title: "",
@@ -49,6 +44,7 @@ export const ProposalForm = ({ addProposal, close }: ProposalFormP) => {
   ) => setFormData({ ...formData, [event.target.name]: event.target.value });
 
   const handleSubmit = async (event: React.FormEvent) => {
+    setSubmitting(true);
     event.preventDefault();
     const result = formSchema.safeParse(formData);
 
@@ -70,9 +66,9 @@ export const ProposalForm = ({ addProposal, close }: ProposalFormP) => {
     };
 
     await contract?.createProposal(...Object.values(final));
+    setSubmitting(false);
 
-    addProposal(final);
-    close();
+    window.location.reload();
   };
 
   return (
@@ -137,6 +133,7 @@ export const ProposalForm = ({ addProposal, close }: ProposalFormP) => {
         )}
       </div>
       <button
+        disabled={submitting}
         type="submit"
         className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline self-center"
       >

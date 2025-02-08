@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useWeb3 } from "./context";
+import { daoAddress, useWeb3 } from "./context";
 import { z } from "zod";
 
 const formSchema = z.object({
@@ -12,11 +12,13 @@ type ProposalFormProps = {
   close: () => void;
 };
 
-export const VotingForm = ({ vote, close, id }: ProposalFormProps) => {
-  const { tokens, contract } = useWeb3();
+export const VotingForm = ({ vote, id }: ProposalFormProps) => {
+  const { tokens, contract, tokensContract } = useWeb3();
   const [errors, setErrors] = useState({ range: "" });
   const [range, setRange] = useState(1);
-  const handleSubmit = (event: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+  const handleSubmit = async (event: React.FormEvent) => {
+    setSubmitting(true);
     event.preventDefault();
     const parsed = formSchema.safeParse({ range });
     if (!parsed.success) {
@@ -24,13 +26,13 @@ export const VotingForm = ({ vote, close, id }: ProposalFormProps) => {
       return;
     }
     setErrors({ range: "" });
-    contract
-      ?.voteOnProposal(1, vote, BigInt(range))
-      .then(() => close())
-      .catch((error: Error) => {
-        console.error(error);
-        setErrors({ range: error.message });
-      });
+
+    await tokensContract?.approve(daoAddress, BigInt(range));
+    await contract?.voteOnProposal(id, vote, BigInt(range));
+
+    setSubmitting(false);
+
+    window.location.reload();
   };
 
   return (
@@ -67,6 +69,7 @@ export const VotingForm = ({ vote, close, id }: ProposalFormProps) => {
         )}
       </div>
       <button
+        disabled={submitting}
         type="submit"
         className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
       >

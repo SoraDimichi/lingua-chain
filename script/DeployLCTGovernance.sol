@@ -10,8 +10,11 @@ contract DeployLCTGovernance is Script {
     function run() external {
         vm.startBroadcast();
 
-        LCToken lcToken = new LCToken(5 ether);
+        LCToken lcToken = new LCToken(50_000 ether);
         LCTGovernance governance = new LCTGovernance(lcToken, 1 ether);
+        address user = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+
+        lcToken.transfer(user, 300 ether);
 
         uint256 currentDay = block.timestamp / 1 days;
         governance.createProposal(
@@ -31,6 +34,15 @@ contract DeployLCTGovernance is Script {
         );
 
         vm.stopBroadcast();
+
+        // vm.startBroadcast(user);
+        // // User approves governance to spend their tokens.
+        // lcToken.approve(address(governance), 10 ether);
+        //
+        // // Now user calls stakeTokens on governance
+        // governance.stakeTokens(10 ether);
+        //
+        // vm.stopBroadcast();
 
         console.log("VITE_LCTOKEN=", address(lcToken));
         console.log("VITE_LCTGOVERNANCE=", address(governance));
