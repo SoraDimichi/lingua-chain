@@ -201,10 +201,14 @@ const Proposal = (p: Proposal) => {
           </div>
           <p className="text-gray-300 mt-3">{description}</p>
         </div>
-        <div>
-          <VotingButtons id={p.id} positive={positive} negative={negative} />
-          <Scale positive={positive} negative={negative} />
-        </div>
+        {active ? (
+          <div>
+            <VotingButtons id={p.id} positive={positive} negative={negative} />
+            <Scale positive={positive} negative={negative} />
+          </div>
+        ) : (
+          <button>withdraw</button>
+        )}
       </div>
     </div>
   );
