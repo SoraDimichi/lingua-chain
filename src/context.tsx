@@ -13,7 +13,7 @@ import tokensArtifact from "../out/LCToken.sol/LCToken.json";
 
 const tokensAddress = import.meta.env.VITE_LCTOKEN;
 export const daoAddress = import.meta.env.VITE_LCTGOVERNANCE;
-export const provider = "http://localhost:8545";
+export const provider = import.meta.env.VITE_RPC;
 
 interface Web3State {
   provider: ethers.BrowserProvider | null;

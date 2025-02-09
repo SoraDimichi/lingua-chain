@@ -162,8 +162,14 @@ const WithdrawButton = ({
 };
 
 const buttonStyle = `w-9 h-9 grid place-items-center rounded-full border-2`;
-type VotingButtonsP = { id: bigint; positive: Vote[]; negative: Vote[] };
-const VotingButtons = ({ id, positive, negative }: VotingButtonsP) => {
+type VotingButtonsP = {
+  id: bigint;
+  positive: Vote[];
+  negative: Vote[];
+  active: boolean;
+};
+
+const VotingButtons = ({ id, positive, negative, active }: VotingButtonsP) => {
   const { account } = useWeb3();
 
   const votedPositivly = positive.find((v) => v.voter === account);
@@ -185,12 +191,13 @@ const VotingButtons = ({ id, positive, negative }: VotingButtonsP) => {
 
   return (
     <div className="grid grid-cols-2 gap-3 items-center">
-      <WithdrawButton
-        id={id}
-        votedNegativly={votedNegativly}
-        votedPositivly={votedPositivly}
-      />
-
+      {!active && (
+        <WithdrawButton
+          id={id}
+          votedNegativly={votedNegativly}
+          votedPositivly={votedPositivly}
+        />
+      )}
       {!(vote !== null && vote === false) && (
         <button
           disabled={disabled}
@@ -238,8 +245,9 @@ const Proposal = (p: Proposal) => {
     finalDate,
   } = p;
 
-  const now = Date.now();
-  const active = startingDate < now && finalDate > now;
+  const now = BigInt(Math.floor(Date.now() / 1000));
+  const active = finalDate > now;
+  console.log(startingDate, finalDate, now);
 
   return (
     <div className="py-3.5 text-white">
@@ -247,7 +255,7 @@ const Proposal = (p: Proposal) => {
         <div>
           <h2 className="text-lg font-semibold flex gap-2 items-center">
             <div
-              className={`size-2 rounded-full bg-${!active ? "green" : "gray"}-700`}
+              className={`size-2 rounded-full ${active ? "bg-green-700" : "bg-gray-600"}`}
             />
             <span>{title}</span>
           </h2>
@@ -259,8 +267,13 @@ const Proposal = (p: Proposal) => {
           <p className="text-gray-300 mt-3">{description}</p>
         </div>
         <div className="flex gap-10 items-start">
-          <div>
-            <VotingButtons id={p.id} positive={positive} negative={negative} />
+          <div className="ml-4 w-20">
+            <VotingButtons
+              id={p.id}
+              active={active}
+              positive={positive}
+              negative={negative}
+            />
             <Scale positive={positive} negative={negative} />
           </div>
         </div>
@@ -299,8 +312,8 @@ const Scale = ({
         />
       </div>
       <div className="flex justify-between text-xs mt-1 text-gray-400">
-        <span>{forVotes}</span>
-        <span>{againstVotes}</span>
+        <span>{Math.floor(forVotes)}</span>
+        <span>{Math.floor(againstVotes)}</span>
       </div>
     </div>
   );
