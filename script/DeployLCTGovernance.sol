@@ -35,15 +35,6 @@ contract DeployLCTGovernance is Script {
 
         vm.stopBroadcast();
 
-        // vm.startBroadcast(user);
-        // // User approves governance to spend their tokens.
-        // lcToken.approve(address(governance), 10 ether);
-        //
-        // // Now user calls stakeTokens on governance
-        // governance.stakeTokens(10 ether);
-        //
-        // vm.stopBroadcast();
-
         console.log("VITE_LCTOKEN=", address(lcToken));
         console.log("VITE_LCTGOVERNANCE=", address(governance));
     }
