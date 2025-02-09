@@ -46,15 +46,17 @@ export default function ProposalsList() {
   const { contract, account } = useWeb3();
 
   useEffect(() => {
-    // (!account
-    //   ? new ethers.Contract(
-    //       daoAddress,
-    //       contractArtifact.abi,
-    //       new ethers.JsonRpcProvider(provider),
-    //     )
-    //   : contract
-    // )
-    contract?.getProposals().then(format).then(setProposals);
+    (!account
+      ? new ethers.Contract(
+          daoAddress,
+          contractArtifact.abi,
+          new ethers.JsonRpcProvider(provider),
+        )
+      : contract
+    )
+      ?.getProposals()
+      .then(format)
+      .then(setProposals);
   }, [contract, account]);
 
   return (
