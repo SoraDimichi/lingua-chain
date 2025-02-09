@@ -32,9 +32,7 @@ export const VotingForm = ({ vote, id }: ProposalFormProps) => {
     await tokensContract
       ?.approve(daoAddress, BigInt(real))
       .then((tx) => tx.wait());
-    await contract
-      ?.voteOnProposal(id, vote, BigInt(real))
-      .then((tx) => tx.wait());
+    await contract?.vote(id, vote, BigInt(real)).then((tx) => tx.wait());
 
     setSubmitting(false);
 

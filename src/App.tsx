@@ -24,7 +24,10 @@ interface Proposal {
 }
 
 const formatVotes = (data) =>
-  data.map((v) => ({ voter: v[0], stakeAmount: BigInt(v[1]) }));
+  data.map((v) => ({
+    voter: v[0],
+    stakeAmount: BigInt(v[1]),
+  }));
 
 const format = (data) =>
   data.map((p: any) => ({
@@ -43,17 +46,15 @@ export default function ProposalsList() {
   const { contract, account } = useWeb3();
 
   useEffect(() => {
-    (!account
-      ? new ethers.Contract(
-          daoAddress,
-          contractArtifact.abi,
-          new ethers.JsonRpcProvider(provider),
-        )
-      : contract
-    )
-      ?.getAllProposals()
-      .then(format)
-      .then(setProposals);
+    // (!account
+    //   ? new ethers.Contract(
+    //       daoAddress,
+    //       contractArtifact.abi,
+    //       new ethers.JsonRpcProvider(provider),
+    //     )
+    //   : contract
+    // )
+    contract?.getProposals().then(format).then(setProposals);
   }, [contract, account]);
 
   return (
@@ -113,14 +114,58 @@ export const AddButton = () => {
   );
 };
 
+type WithdrawButtonP = {
+  votedPositivly: Vote | undefined;
+  votedNegativly: Vote | undefined;
+  id: bigint;
+};
+
+const WithdrawButton = ({
+  id,
+  votedNegativly,
+  votedPositivly,
+}: WithdrawButtonP) => {
+  const { contract, account } = useWeb3();
+  const voted = votedNegativly || votedPositivly;
+  const [visible, setVisible] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  useEffect(() => {
+    if (!voted || !contract || !account) return;
+
+    const checkVisibility = async () => {
+      const filter = contract.filters.StakeWithdrawn(id, account);
+      const events = await contract.queryFilter(filter, 0, "latest");
+      setVisible(events.length === 0);
+    };
+
+    checkVisibility();
+  }, [voted, contract, id, account]);
+  if (!voted) return null;
+  if (!visible) return null;
+
+  const withdraw = async () => {
+    setBlocked(true);
+    contract
+      ?.withdraw(id)
+      .then((tx) => tx.wait())
+      .then(() => window.location.reload())
+      .finally(() => setBlocked(false));
+  };
+
+  return (
+    <button className={`${buttonStyle}`} disabled={blocked} onClick={withdraw}>
+      <span className="scale-240 -mt-1">↑</span>
+    </button>
+  );
+};
+
 const buttonStyle = `w-9 h-9 grid place-items-center rounded-full border-2`;
 type VotingButtonsP = { id: bigint; positive: Vote[]; negative: Vote[] };
 const VotingButtons = ({ id, positive, negative }: VotingButtonsP) => {
   const { account } = useWeb3();
 
-  const votedPositivly = positive.some((v) => v.voter === account);
-  const votedNegativly = negative.some((v) => v.voter === account);
-
+  const votedPositivly = positive.find((v) => v.voter === account);
+  const votedNegativly = negative.find((v) => v.voter === account);
   const [vote, setVote] = useState<boolean | null>();
 
   useEffect(() => {
@@ -137,27 +182,37 @@ const VotingButtons = ({ id, positive, negative }: VotingButtonsP) => {
   };
 
   return (
-    <div className="flex gap-3 items-center">
-      <button
-        disabled={disabled}
-        className={`${buttonStyle} border-green-800 ${vote !== null && vote === false ? "invisible" : ""} ${vote === true ? "bg-green-800 text-gray-900" : "text-green-800"}`}
-        onClick={() => {
-          setOpen(true);
-          setVote(true);
-        }}
-      >
-        <For />
-      </button>
-      <button
-        disabled={disabled}
-        className={`${buttonStyle} border-red-800 ${vote !== null && vote === true ? "invisible" : ""} ${vote === false ? "bg-red-800 text-gray-900" : "text-red-800"}`}
-        onClick={() => {
-          setOpen(true);
-          setVote(false);
-        }}
-      >
-        <Against />
-      </button>
+    <div className="grid grid-cols-2 gap-3 items-center">
+      <WithdrawButton
+        id={id}
+        votedNegativly={votedNegativly}
+        votedPositivly={votedPositivly}
+      />
+
+      {!(vote !== null && vote === false) && (
+        <button
+          disabled={disabled}
+          className={`col-start-1 col-end-2 row-start-1 row-end-2 ${buttonStyle} border-green-800 ${vote === true ? "bg-green-800 text-gray-900" : "text-green-800"}`}
+          onClick={() => {
+            setOpen(true);
+            setVote(true);
+          }}
+        >
+          <For />
+        </button>
+      )}
+      {!(vote !== null && vote === true) && (
+        <button
+          disabled={disabled}
+          className={`col-start-2 col-end-3 row-start-1 row-end-2 ${buttonStyle} border-red-800  ${vote === false ? "bg-red-800 text-gray-900" : "text-red-800"}`}
+          onClick={() => {
+            setOpen(true);
+            setVote(false);
+          }}
+        >
+          <Against />
+        </button>
+      )}
       {open && (
         <div className="fixed inset-0 bg-black/60 bg-opacity-20 flex items-center justify-center z-50">
           <div className="relative min-w-75">
@@ -201,14 +256,12 @@ const Proposal = (p: Proposal) => {
           </div>
           <p className="text-gray-300 mt-3">{description}</p>
         </div>
-        {active ? (
+        <div className="flex gap-10 items-start">
           <div>
             <VotingButtons id={p.id} positive={positive} negative={negative} />
             <Scale positive={positive} negative={negative} />
           </div>
-        ) : (
-          <button>withdraw</button>
-        )}
+        </div>
       </div>
     </div>
   );
